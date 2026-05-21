@@ -10,8 +10,8 @@ from youtube_transcript_api import YouTubeTranscriptApi
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import StateGraph, END, START
-# 🟩 UPDATED EXTENSION IMPORT
-from langgraph_checkpoint_sqlite import SqliteSaver
+# 🟩 THE CORRECT PYTHON LAYOUT
+from langgraph.checkpoint.sqlite import SqliteSaver
 from tutor_state import TutorState
 from langchain_google_genai import ChatGoogleGenerativeAI
 
