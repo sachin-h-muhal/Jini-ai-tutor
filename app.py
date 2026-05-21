@@ -50,25 +50,27 @@ if not st.session_state.authenticated:
 user = st.session_state.username
 config = {"configurable": {"thread_id": f"session_thread_{user}"}}
 
-# FIX 10: StateSnapshot check syntax routing correction
+# FIX 10: Check snapshot status cleanly
 state_snapshot = ai_tutor_app.get_state(config)
+
+# 🟩 DYNAMIC ACCORDING TO YOUR CURRICULUM LOGIC: Do not overwrite agenda strings manually!
 if not state_snapshot.values.get("messages"):
     initial_profile = {
         "user_id": user,
         "username": user,
-        "agenda": ["Introduction to Python Logic", "Control Flow Structures", "Function Blocks", "Algorithmic Loops"],
+        "agenda": [],  # Leave empty so your backend agent can generate and populate this live!
         "current_topic_index": 0,
         "comprehension_score": 0,
         "messages": [AIMessage(
-            content=f"Welcome back, Developer {user}. I have initialized your custom curriculum workspace. Let's begin.")]
+            content=f"Welcome back, Developer {user}. Tell me what you want to learn today, or upload your syllabus, and I will build your custom roadmap!")]
     }
     ai_tutor_app.update_state(config, initial_profile)
     state_snapshot = ai_tutor_app.get_state(config)
 
-# Hydrate metrics out from snapshot core
+# Hydrate view values cleanly from backend database state snapshot profiles
 graph_data = state_snapshot.values
-agenda = graph_data["agenda"]
-curr_idx = graph_data["current_topic_index"]
+agenda = graph_data.get("agenda", [])
+curr_idx = graph_data.get("current_topic_index", 0)
 score = graph_data.get("comprehension_score", 0)
 
 # 4. Standard Collapsible Sidebar UI Layout Container
@@ -79,28 +81,34 @@ with st.sidebar:
 
     # Progress Calculation Display
     total_topics = len(agenda)
-    progress_val = float(curr_idx / total_topics) if total_topics > 0 else 0.0
-    st.progress(min(max(progress_val, 0.0), 1.0))
-    st.caption(f"Topic Focus: {curr_idx + 1} of {total_topics}")
+    if total_topics > 0:
+        progress_val = float(curr_idx / total_topics)
+        st.progress(min(max(progress_val, 0.0), 1.0))
+        st.caption(f"Topic Focus: {curr_idx + 1} of {total_topics}")
 
-    # FIX 5: Dynamic Diagnostics Chart Data Source Calculation
-    completed = curr_idx
-    remaining = max(0, total_topics - completed - 1)
+        # FIX 5: Dynamic Diagnostics Chart Data Source Calculation
+        completed = curr_idx
+        remaining = max(0, total_topics - completed - 1)
 
-    chart_df = pd.DataFrame({
-        "Status": ["Completed", "Remaining"],
-        "Count": [completed, remaining]
-    })
-    st.bar_chart(chart_df.set_index("Status"))
+        chart_df = pd.DataFrame({
+            "Status": ["Completed", "Remaining"],
+            "Count": [completed, remaining]
+        })
+        st.bar_chart(chart_df.set_index("Status"))
+    else:
+        st.info("💡 Complete an assignment or tell Jini your goals to generate your visual syllabus tracker!")
 
     st.subheader("📚 Learning Syllabus")
-    for idx, topic in enumerate(agenda):
-        if idx < curr_idx:
-            st.markdown(f"✅ ~~{topic}~~")
-        elif idx == curr_idx:
-            st.markdown(f"👉 **{topic}**")
-        else:
-            st.markdown(f"⏳ {topic}")
+    if agenda:
+        for idx, topic in enumerate(agenda):
+            if idx < curr_idx:
+                st.markdown(f"✅ ~~{topic}~~")
+            elif idx == curr_idx:
+                st.markdown(f"👉 **{topic}**")
+            else:
+                st.markdown(f"⏳ {topic}")
+    else:
+        st.caption("No topics active yet. Initialize conversation to stream custom objectives.")
 
     if st.button("Secure Logout"):
         st.session_state.authenticated = False
@@ -128,17 +136,21 @@ if prompt := st.chat_input("Engage with your tutor here...", key="chat_user_inpu
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # FIX 6: Pass exact payload map to invoke parameter layers cleanly
+    # Pass input payload map to invoke parameter layers cleanly
     output_state = ai_tutor_app.invoke(
         {"messages": [HumanMessage(content=prompt)]},
         config
     )
 
+    # Re-fetch the updated graph metrics immediately after execution to capture generated agendas
+    updated_snapshot = ai_tutor_app.get_state(config)
+    updated_agenda = updated_snapshot.values.get("agenda", [])
+
     # Issue 8 Resolved: Inspect intent token in app view loop after response finishes compiling
     last_response_text = output_state["messages"][-1].content
-    if "[INTENT: NEXT]" in last_response_text and curr_idx < len(agenda) - 1:
+    if "[INTENT: NEXT]" in last_response_text and curr_idx < len(updated_agenda) - 1:
         next_idx = curr_idx + 1
         ai_tutor_app.update_state(config, {"current_topic_index": next_idx})
-        st.toast(f"✅ Advancing syllabus focus to: {agenda[next_idx]}")
+        st.toast(f"✅ Advancing syllabus focus to: {updated_agenda[next_idx]}")
 
     st.rerun()
