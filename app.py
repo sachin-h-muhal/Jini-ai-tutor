@@ -141,4 +141,4 @@ if prompt := st.chat_input("Engage with your tutor here...", key="chat_user_inpu
         ai_tutor_app.update_state(config, {"current_topic_index": next_idx})
         st.toast(f"✅ Advancing syllabus focus to: {agenda[next_idx]}")
 
-    st.rerun()s
+    st.rerun()
