@@ -6,21 +6,30 @@ DB_NAME = "users.db"
 
 
 def init_auth_db():
-    """Initializes the secure user identity table with salt tracking."""
+    """Initializes the secure user identity table and runs migrations if needed."""
     with sqlite3.connect(DB_NAME) as conn:
         cursor = conn.cursor()
+
+        # 1. Create the base table structure if it's a completely fresh deploy
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 username TEXT PRIMARY KEY,
                 password_hash TEXT NOT NULL,
-                salt TEXT NOT NULL
+                salt TEXT NOT NULL DEFAULT ''
             )
         """)
+
+        # 2. MIGRATION PATCH: If table existed from an older build without 'salt', inject it dynamically
+        cursor.execute("PRAGMA table_info(users)")
+        columns = [column[1] for column in cursor.fetchall()]
+        if "salt" not in columns:
+            cursor.execute("ALTER TABLE users ADD COLUMN salt TEXT NOT NULL DEFAULT ''")
+
         conn.commit()
 
 
 def hash_password(password: str, salt: bytes) -> str:
-    """Hashes passwords securely using SHA-256 combined with a unique salt."""
+    """Hashes passwords securely using SHA-256 combined with a unique salt matrix."""
     return hashlib.sha256(salt + password.encode()).hexdigest()
 
 
