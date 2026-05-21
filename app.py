@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from langchain_core.messages import HumanMessage, AssistantMessage
+from langchain_core.messages import HumanMessage, AIMessage
 from auth_manager import init_auth_db, register_user, verify_user
 from agent import ai_tutor_app
 
@@ -59,7 +59,7 @@ if not state_snapshot.values.get("messages"):
         "agenda": ["Introduction to Python Logic", "Control Flow Structures", "Function Blocks", "Algorithmic Loops"],
         "current_topic_index": 0,
         "comprehension_score": 0,
-        "messages": [AssistantMessage(
+        "messages": [AIMessage(
             content=f"Welcome back, Developer {user}. I have initialized your custom curriculum workspace. Let's begin.")]
     }
     ai_tutor_app.update_state(config, initial_profile)

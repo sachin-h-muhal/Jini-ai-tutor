@@ -1,7 +1,7 @@
 import os
 import sqlite3
 from typing import List
-from langchain_core.messages import SystemMessage, HumanMessage
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.sqlite import SqliteSaver
@@ -50,7 +50,6 @@ def vision_node(state: TutorState) -> dict:
 
 def evaluation_node(state: TutorState) -> dict:
     """Calculates conceptual comprehension scores objectively from user updates."""
-    # Isolate last human response text
     user_inputs = [m for m in state["messages"] if isinstance(m, HumanMessage)]
     if not user_inputs:
         return {"comprehension_score": 0}
