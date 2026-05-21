@@ -5,3 +5,4 @@ langgraph>=0.0.50
 youtube-transcript-api>=0.6.2
 python-dotenv>=1.0.1
 google-generativeai>=0.8.0
+langgraph-checkpoint-sqlite>=2.0.0
